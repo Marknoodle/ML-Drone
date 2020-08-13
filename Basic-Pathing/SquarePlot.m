@@ -32,7 +32,7 @@ ylabel('y-axis')
                leftoff = moveWithPlotting(r, "left", distanceL, speed, drone, leftoff);
        end
       
-      pause(5);
+      pause(2);
       %turn(r, pi/2);
       
       edgeIndex = edgeIndex+1;
