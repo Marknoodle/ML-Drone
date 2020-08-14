@@ -56,43 +56,44 @@ function position = moveWithPlotting(Drone, Direction, Distance, Speed, Animated
             moveleft(Drone, 'Distance', Distance, 'Speed', Speed, 'WaitUntilDone', false);
             axis = "y";
     end
-    stopWatch = tic;
-    position = plotPathing(Drone, AnimatedLine, axis, stopWatch, Position)
+    position = plotPathing(Drone, AnimatedLine, axis, Position, Distance, Speed)
 end
 
 
-function position = plotPathing(Drone, AnimatedLine, Axis, TimeKeeper, Position) 
+function position = plotPathing(Drone, AnimatedLine, Axis,  Position, Distance, Speed)
+    pause(0.1);
     positionMemory = Position;
     [speed, ~] = readSpeed(Drone);
     speedInX = speed(1);
     speedInY = speed(2);
-    while(speedInX == speedInY && speedInX == 0) %Do not want to record information until drone is moving
-        ~   %waiting 
-    end
-    switch Axis
+    TimeKeeper = tic;
+    elapsedTime = 0;
+    %while(speedInX == speedInY && speedInX == 0) %Do not want to record information until drone is moving
+          %waiting 
+    %end
+    %switch Axis
         
         % case that runs dependent on speed in the X-Axis
-        case "x" 
-            while (speedInX > 0)
+        %case "x" 
+        while (toc(timeKeeper) < Distance/Speed)
                 [speed, ~] = readSpeed(Drone);
                 speedInX = speed(1);
                 speedInY = speed(2);
                 elapsedTime = toc(TimeKeeper);
                 addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speedInX, positionMemory(2) + elapsedTime * speedInY);
                 drawnow;
-            end
+        end
             
         % case that runs dependent on speed in the Y-Axis
-        case "y"
-            while (speedInY > 0)                                                     % while we are still moving
-                [speed, ~] = readSpeed(Drone);                                       % stores the current speed of the drone in the speed variable, tosses out the current time
-                speedInX = speed(1);                                                 % speed in x-axis -> speedInX
-                speedInY = speed(2);                                                 % speed in y-axis -> speedInY
-                elapsedTime = toc(TimeKeeper);                                       % calculates the elapsed time since the last tick -> elapsedTime
-                addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speedInX, 
-                                        positionMemory(2) + elapsedTime * speedInY); % adds an x and y point to our animated line
-                drawnow; % draws the updated animated line
-            end
-    end
+      %  case "y"
+      %      while (speedInY > 0)                                                     % while we are still moving
+      %          [speed, ~] = readSpeed(Drone);                                       % stores the current speed of the drone in the speed variable, tosses out the current time
+      %          speedInX = speed(1);                                                 % speed in x-axis -> speedInX
+      %          speedInY = speed(2);                                                 % speed in y-axis -> speedInY
+      %          elapsedTime = toc(TimeKeeper);                                       % calculates the elapsed time since the last tick -> elapsedTime
+      %          addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speedInX, positionMemory(2) + elapsedTime * speedInY); % adds an x and y point to our animated line
+      %          drawnow; % draws the updated animated line
+     %       end
+    %end
     position = [elapsedTime * speedInX, elapsedTime * speedInY]; % returns our updated position in the x and y axis
 end
