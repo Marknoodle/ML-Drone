@@ -1,6 +1,6 @@
-r = ryze();
+r = ryze(); %connect to drone (make sure you are on drone network)
 
-pause(3);
+pause(3); 
 
 takeoff(r);
 
@@ -9,18 +9,18 @@ xlabel('x-axis')
 ylabel('y-axis')
 %zlabel('z-axis')
    
-   edgeIndex = 0; %Which edge of the 'square' we are on
+   edgeIndex = 0; %Which edge of the 'shape' we are on
    distanceL = 0.5; %Meters
 
    speed = 0.5; %Meters/Sec
    
-   drone = animatedline('LineWidth',2,"color","r");
+   drone = animatedline('LineWidth',2,"color","r"); %What gets plotted in real time on figure to represent drone movement
    
-   leftoff = zeros(1:2);
+   leftoff = zeros(1:2); %Used to keep track of where drone was before new 'move' command
    
   % totalDistance = distanceL * 4 in this case
    while(edgeIndex <= 3)
-       tplot = tic;
+       %tplot = tic;
        switch edgeIndex
            case 0
                leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff);
@@ -33,7 +33,6 @@ ylabel('y-axis')
        end
       
       pause(2);
-      %turn(r, pi/2);
       
       edgeIndex = edgeIndex+1;
    end
@@ -62,31 +61,38 @@ function position = moveWithPlotting(Drone, Direction, Distance, Speed, Animated
 end
 
 
-function position = plotPathing(Drone, AnimatedLine, Axis, TimeKeeper, Position)
-    pause(0.1)
+function position = plotPathing(Drone, AnimatedLine, Axis, TimeKeeper, Position) 
     positionMemory = Position;
     [speed, ~] = readSpeed(Drone);
     speedInX = speed(1);
     speedInY = speed(2);
+    while(speedInX == speedInY && speedInX == 0) %Do not want to record information until drone is moving
+        ~   %waiting 
+    end
     switch Axis
-        case "x"
+        
+        % case that runs dependent on speed in the X-Axis
+        case "x" 
             while (speedInX > 0)
                 [speed, ~] = readSpeed(Drone);
                 speedInX = speed(1);
                 speedInY = speed(2);
-                timeStamp = toc(TimeKeeper);
-                addpoints(AnimatedLine, positionMemory(1) + timeStamp * speedInX, positionMemory(2) + timeStamp * speedInY);
+                elapsedTime = toc(TimeKeeper);
+                addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speedInX, positionMemory(2) + elapsedTime * speedInY);
                 drawnow;
             end
+            
+        % case that runs dependent on speed in the Y-Axis
         case "y"
-            while (speedInY > 0)
-                [speed, ~] = readSpeed(Drone);
-                speedInX = speed(1);
-                speedInY = speed(2);
-                timeStamp = toc(TimeKeeper);
-                addpoints(AnimatedLine, positionMemory(1) + timeStamp * speedInX, positionMemory(2) + timeStamp * speedInY);
-                drawnow;
+            while (speedInY > 0)                                                     % while we are still moving
+                [speed, ~] = readSpeed(Drone);                                       % stores the current speed of the drone in the speed variable, tosses out the current time
+                speedInX = speed(1);                                                 % speed in x-axis -> speedInX
+                speedInY = speed(2);                                                 % speed in y-axis -> speedInY
+                elapsedTime = toc(TimeKeeper);                                       % calculates the elapsed time since the last tick -> elapsedTime
+                addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speedInX, 
+                                        positionMemory(2) + elapsedTime * speedInY); % adds an x and y point to our animated line
+                drawnow; % draws the updated animated line
             end
     end
-    position = [timeStamp * speedInX, timeStamp * speedInY];
+    position = [elapsedTime * speedInX, elapsedTime * speedInY]; % returns our updated position in the x and y axis
 end
