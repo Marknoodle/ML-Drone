@@ -6,7 +6,7 @@ takeoff(r);
 
 pause(2);
 
-moveup(r,"Distance", 1.5, 'speed', 1);
+moveup(r,"Distance", 1.2, 'speed', 1);
 
 figure; 
 xlabel('x-axis(out from camera) in meters')
@@ -28,14 +28,16 @@ zlabel('z-axis (height) in meters')
            case 0
                leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff, r); %forward
            case 1
-               leftoff = moveWithPlotting(r, "right", distanceL, speed, drone, leftoff, r); %right
+               leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff, r); %right
            case 2
-               leftoff = moveWithPlotting(r, "back", distanceL, speed, drone, leftoff, r); %back
+               leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff, r); %back
            case 3
-               leftoff = moveWithPlotting(r, "left", distanceL, speed, drone, leftoff, r); %left
+               leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff, r); %left
        end %Flight path should resemble a square
       
-      pause(2); %Make sure the drone has finished its current move command
+      pause(1); %Make sure the drone has finished its current move command
+      turn(r, pi/2); %turns drone 90 degrees to the right
+      pause(1);%finish move command
       
       edgeIndex = edgeIndex+1; %moves to the next edge/move command
    end
