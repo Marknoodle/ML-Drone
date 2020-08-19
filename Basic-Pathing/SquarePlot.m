@@ -4,16 +4,19 @@ pause(2); %in seconds
 
 takeoff(r);
 
+pause(2);
+
+moveup(r,"Distance", 1.5, 'speed', 1);
+
 figure; 
-xlabel('x-axis')
-ylabel('y-axis')
-%zlabel('z-axis') %Trying to focus on just 2 Dimensions for now 
-% (not yet considering drone height when graphing)
+xlabel('x-axis(out from camera) in meters')
+ylabel('y-axis (perpendicular to camera in meters')
+zlabel('z-axis (height) in meters') 
    
    edgeIndex = 0; %Which edge of the 'shape' we are on
-   distanceL = 0.5; %Meters
+   distanceL = 4; %Meters
 
-   speed = 0.5; %Meters/Sec
+   speed = 1; %Meters/Sec
    
    drone = animatedline('LineWidth',2,"color","r"); %What gets plotted in real time on figure to represent drone movement
    
@@ -23,13 +26,13 @@ ylabel('y-axis')
   
        switch edgeIndex
            case 0
-               leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff); %forward
+               leftoff = moveWithPlotting(r, "forward", distanceL, speed, drone, leftoff, r); %forward
            case 1
-               leftoff = moveWithPlotting(r, "right", distanceL, speed, drone, leftoff); %right
+               leftoff = moveWithPlotting(r, "right", distanceL, speed, drone, leftoff, r); %right
            case 2
-               leftoff = moveWithPlotting(r, "back", distanceL, speed, drone, leftoff); %back
+               leftoff = moveWithPlotting(r, "back", distanceL, speed, drone, leftoff, r); %back
            case 3
-               leftoff = moveWithPlotting(r, "left", distanceL, speed, drone, leftoff); %left
+               leftoff = moveWithPlotting(r, "left", distanceL, speed, drone, leftoff, r); %left
        end %Flight path should resemble a square
       
       pause(2); %Make sure the drone has finished its current move command
@@ -42,7 +45,7 @@ ylabel('y-axis')
       %in the event that this script terminates prior to clear above, make
       %sure to manually clear before running this script again.
 
-function position = moveWithPlotting(Drone, Direction, Distance, Speed, AnimatedLine, Position) % Moving a specified direction, distance, and speed
+function position = moveWithPlotting(Drone, Direction, Distance, Speed, AnimatedLine, Position, droneObj) % Moving a specified direction, distance, and speed
 
     switch Direction
         case "forward"
@@ -54,11 +57,11 @@ function position = moveWithPlotting(Drone, Direction, Distance, Speed, Animated
         case "left"
             moveleft(Drone, 'Distance', Distance, 'Speed', Speed, 'WaitUntilDone', false);
     end
-    position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed) %update where the drone 'should be' after move command (what gets put in leftoff)
+    position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed, droneObj) %update where the drone 'should be' after move command (what gets put in leftoff)
 end
 
 
-function position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed) %plots the drone path on the figure 
+function position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed, droneObj) %plots the drone path on the figure 
 
     positionMemory = Position; %Last position of drone
 
@@ -66,15 +69,18 @@ function position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed) 
   
    
         while (toc(timeKeeper) < Distance/Speed) % Until the drone finished its current move command
-                [speed, ~] = readSpeed(Drone);%retrieve current moving speed of drone
-                speedInX = speed(1); %speed in x direction
-                speedInY = speed(2); %speed in y direction 
-                elapsedTime = toc(timeKeeper); %how much time has passed since drone has begun to move after command 
-                addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speedInX, positionMemory(2) + elapsedTime * speedInY); %trying to record updated drone distances in real time
-                drawnow; %The idea is that if you multiply elapsedTime by x and y speed you can find out the distance the drone has traveled
+                speed = readSpeed(droneObj);
+                height = readHeight(droneObj);
+                if(~isempty(speed) && ~isempty(height) && height ~= 0) %Sometimes speed will be a flat zero, which will crash when adding points.
+                    %speed(1); speed in x direction
+                    %speed(2); speed in y direction 
+                    elapsedTime = toc(timeKeeper); %how much time has passed since drone has begun to move after command 
+                    addpoints(AnimatedLine, positionMemory(1) + elapsedTime * speed(1), positionMemory(2) + elapsedTime * speed(2), height ); %trying to record updated drone distances in real time
+                    drawnow; %The idea is that if you multiply elapsedTime by x and y speed you can find out the distance the drone has traveled
+                end 
         end
             
-    position = [elapsedTime * speedInX, elapsedTime * speedInY]; % returns our updated position in the x and y axis
+    position = [positionMemory(1) + elapsedTime * speed(1), positionMemory(2) + elapsedTime * speed(2)]; % returns our updated position in the x and y axis
     %if we did not have 'position' all future updates to the figure would start
     %at origin and not where the drone left off 
     %'position' is what eventually gets stored in leftoff
