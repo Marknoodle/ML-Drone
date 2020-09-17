@@ -26,7 +26,7 @@ for i=1:25
     rectangle('Position',[5*scale 5*scale 10*scale 10*scale],'Curvature',1,'EdgeColor','g');
 end
 %% Compare to video frame
-image = imread('fpic.jpg'); % MWsample_full.png
+image = imread('bub_img.jpg'); % MWsample_full.png
 I = rgb2gray(image);
 
 % Detect features
