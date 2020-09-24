@@ -2,11 +2,11 @@
 %%%%Obtain Shape Points (sp)
 
 %inP is the points of the shape given to us that we wish to fly
-inP = [[0 0]; [4 0]; [4 2]; [0 2]]; %This goes 4 meters forward, 2m left, 4m back, then 2m right (a 4 x 2 rectangle)
+%inP = [[0 0]; [4 0]; [4 2]; [0 2]]; %This goes 4 meters forward, 2m left, 4m back, then 2m right (a 4 x 2 rectangle)
 
 %For a Square Path use SquareLength (sL)
-% sL = 2; %2 meters on all sides
-% inP = [[0 0]; [sL 0]; [sL sL]; [0 sL]]; 
+ sL = 1; %2 meters on all sides
+ inP = [[0 0]; [sL 0]; [sL sL]; [0 sL]]; 
 
 sp = zeros(length(inP),2); %Pre-allocation of space for Shape points
 
@@ -134,15 +134,16 @@ function exeMvInstruction(instrNum,mvtype,mvdis,Speed,droneObj,leftOff,droneLine
     for i = 1:1:instrNum
         switch mvtype(i)
             case "mvf"
-                moveforward(DroneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', true);
+                moveforward(droneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', false);
             case "mvb"
-                moveback(DroneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', true);
+                moveback(droneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', false);
             case "mvl"
-                moveleft(DroneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', true);
+                moveleft(droneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', false);
             case "mvr"
-                moveright(DroneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', true);
+                moveright(droneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', false);
         end
         leftOff = plotPathing(droneLine, leftOff, mvdis(i,1), Speed, droneObj); %update where the drone 'should be' after move command (what gets put in leftoff)
+        pause(3)
     end
 end 
 
