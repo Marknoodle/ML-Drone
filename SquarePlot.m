@@ -76,7 +76,7 @@ function position = moveWithPlotting(Drone, Direction, Distance, Speed, Animated
         case "left"
             moveleft(Drone, 'Distance', Distance, 'Speed', Speed, 'WaitUntilDone', false);
     end
-    position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed, droneObj) %update where the drone 'should be' after move command (what gets put in leftoff)
+    position = plotPathing(Drone, AnimatedLine, Position, Distance, Speed, droneObj); %update where the drone 'should be' after move command (what gets put in leftoff)
 end
 
 

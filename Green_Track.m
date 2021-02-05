@@ -8,13 +8,16 @@
 
 %ryzeObj = ryze();
 %cameraObj = camera(ryzeObj);
-mycam = webcam('j5 WebCam JVCU100'); %%% The argument is the usb camera in the research room
+mycam = webcam('j5 WebCam JVCU100'); %%% The argument is the usb camera in the research room: 'j5 WebCam JVCU100'
 preview(mycam)
 
 
 
 droneLine = animatedline('LineWidth',2,"color","r");         
 figure;     %DO NOT CLICK FIGURE DURING TRACKING. DO NOT!!!
+
+%%% FIX THE FIGURE PROBLEM
+
 
 %Assuming Camera is level
 xlabel('x-axis(out from camera) in meters')
@@ -69,7 +72,8 @@ bwImg = greenIntensities > greenThreshold;
         % Display original and binary image
         %subplot(1,2,1); imshow(img);
         %subplot(1,2,2); imshow(bwImg);
-        plot(1); imshow(bwImg);
+        plot(1); 
+        imshow(bwImg)
         drawnow;
     end
 

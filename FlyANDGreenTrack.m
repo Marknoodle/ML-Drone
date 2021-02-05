@@ -5,8 +5,9 @@
 
 %%%% CURRENT GOAL: Be able to fly drone and track position in real time
 %%%% using green tracking algorithm AT THE SAME TIME. We also want to be
-%%%% able to view the drawn path of the drone (so we need to find out how
-%%%% to 'preserve that figure'
+%%%% able to view the drawn path of the drone 
+%%%% (so we need to find out how to 'preserve that figure' if we show both
+%%%%  green tracking and path drawing at the same time)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -14,35 +15,40 @@
 
 mycam = webcam('j5 WebCam JVCU100');
 preview(mycam)
-
-%%%%%%%%%%%%%%%%% FIX FLIGHT PATH DRAWING FIGURE DISAPPERING ISSUE
-
-%droneLine = animatedline('LineWidth',2,"color","r");    
-figure;     %DO NOT CLICK FIGURE DURING TRACKING. DO NOT!!!
+   
+figure;     %FIX FLIGHT PATH DRAWING FIGURE DISAPPERING ISSUE
 hold on 
 
-xlabel('x-axis(out from camera) in meters')             %Needs to be changed
-ylabel('y-axis (perpendicular to camera in meters')     %Needs to be changed
-
-%%%%%%%%%%%%%%%%% FIX FLIGHT PATH DRAWING FIGURE DISAPPERING ISSUE
+xlabel('x-axis (towards/away from white board)')            
+ylabel('y-axis (going along the white board)')
+zlabel('height of drone off ground');
 
 
 %%%%%   STEP 2 (obtain flight path based off of the inputted verticies of a straight edge shape (inP) )
 
 %Obtain Shape Points (sp)
 
+trackPath = animatedline('LineWidth',2,"color","b"); %This is for drawing shape flight path before actual flight
+
 %inP is the points of the shape given to us that we wish to fly
 %inP = [[0 0]; [4 0]; [4 2]; [0 2]]; %This goes 4 meters forward, 2m left, 4m back, then 2m right (a 4 x 2 rectangle)
 
 %For a Square Path use SquareLength (sL)
- sL = 1.2; %2 meters on all sides
+ sL = 1.2; %X meters on all sides
  inP = [[0 0]; [sL 0]; [sL sL]; [0 sL]]; 
 
 sp = zeros(length(inP),2);
 
 for i = 1:1:length(inP)
     sp(i,:) = inP(i,:);
+    addpoints(trackPath, (sp(i)*400) + 200 , (sp(i,2)*400) + 200 ); %REPLACE WITH RED MARKER DISTANCE
 end
+addpoints(trackPath, sp(1)*400 + 200, sp(1,2)*400 + 200 ); 
+% ^^^ Connects the last shape point to the first to "close the shape"
+
+%%% HEADS-UP!!! All "*400 + 200" is for is to give a more accurate
+%%% placement of shape with respect to where the droneLine will be drawn later
+
 
 %Obtain Move Types Between Points and Move Distances
 mvdis = zeros(length(sp),1);
@@ -87,6 +93,7 @@ for i = 1:1:length(sp)
     end %if end
 end %for end
 
+
 r = ryze();%Connect to Drone and Make Drone Obj
 
 
@@ -94,7 +101,7 @@ r = ryze();%Connect to Drone and Make Drone Obj
 
 speed = 1; %Meters/Sec
 takeoff(r);
-moveup(r, 'Distance', 0.6)
+moveup(r, 'Distance', 0.4) %the last arg just tells it to move a bit higher for better camera view
 
 %%%%%   STEP 4 (fly flight path, run green tracking algorithm, and figure drawing at same time)
 
@@ -116,14 +123,14 @@ function exeMvInstruction(instrNum,mvtype,mvdis,Speed,DroneObj,camObj)
             case "mvr"
                 moveright(DroneObj, 'Distance', mvdis(i,1), 'Speed', Speed, 'WaitUntilDone', false);
         end
-        grnTrack(7,camObj); %Do green tracking for ___ seconds
+        grnTrack(7,camObj,DroneObj); %Do green tracking for ___ seconds (right now set to 7)
         
     end
 end 
 
-function grnTrack(time,mycam) %%%Based off of Green_Track.m
+function grnTrack(time,mycam,DroneObj) %%%Based off of Green_Track.m
 
-droneLine = animatedline('LineWidth',2,"color","r");  
+droneLine = animatedline('LineWidth',2,"color","g");  
 duration = time;
 tim = tic;
 greenThreshold = 40;  %The "Green-ness" level
@@ -159,21 +166,22 @@ bwImg = greenIntensities > greenThreshold;
     if ~isempty(row) && ~isempty(col)
         XgreenCentre = round(mean(row));
         YgreenCenter = round(mean(col));
+        height = readHeight(DroneObj);     %GIves us the 3rd height of drone dimension
         
-        if length(row) > 299 && length(col) > 299 && isvalid(droneLine)
-        addpoints(droneLine, XgreenCentre, YgreenCenter ); %%%%%%%%%%%%%%%%% Plot Green Location
+        if( length(row) > 30 && length(col) > 30 && isvalid(droneLine) && ~isempty(height) && height ~= 0 ) 
+            %length(row/col) is so we don't focus on small green things that the cam may pick up on.
+            %isvalid(droneLine) is to avoid handle exception.
+            %~isempty(height) && height ~= 0 is to ensure we get a more "correct" height reading of drone
+        addpoints(droneLine, XgreenCentre, YgreenCenter, height ); %%%%%%%%%%%%%%%%% Add Green Location to be drawn
         end
         
-        % Find the displacement of the green ball from the centre of the
-        % image
-        rowOffset = (nRows/2) - XgreenCentre;
-        colOffset = (nCols/2) - YgreenCenter;
         
-        % Display original and binary image
+        %Display original and binary image
         %subplot(1,2,1); imshow(img);
         %subplot(1,2,2); imshow(bwImg);
-        plot(1); imshow(bwImg);
-        drawnow;
+
+        %imshow(bwImg); % uncomment to see green tracking. WARNING!!! This will result in the drawing being lost. (to be fixed later)  
+        drawnow; %drawn green location to figure
     end
 
 
