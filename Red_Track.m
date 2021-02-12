@@ -1,6 +1,8 @@
 
-%%%% This file's purpose is to track green object movement in camera view
+%%%% This file's purpose is to track red object movement in camera view
 %%%% and plot/draw the movement to a graph
+
+%%%% BASICALLY A RED VERSION COPY OF Green_Track.m
 
 %%%%%%%% Code from: https://www.mathworks.com/help/supportpkg/ryzeio/ug/track-a-green-ball-using-ryze-drone.html
 
@@ -8,7 +10,7 @@
 
 %ryzeObj = ryze();
 %cameraObj = camera(ryzeObj);
-mycam = webcam('j5 WebCam JVCU100'); %%% The argument is the usb camera in the research room: 'j5 WebCam JVCU100'
+mycam = webcam(); %%% The argument is the usb camera in the research room: 'j5 WebCam JVCU100'
 preview(mycam)
 
 
@@ -25,8 +27,8 @@ ylabel('y-axis (perpendicular to camera in meters')
 
 
 tim = tic;
-duration = 7;
-greenThreshold = 25;  %The "Green-ness" level
+duration = 30;
+redThreshold = 60;  %The "red-ness" level
 minOffset = 30;
 while(toc(tim) < duration)
 
@@ -43,10 +45,11 @@ nRows = size(img, 1);
 nCols = size(img, 2);
 
 %% Approximate the intensity of green components in the image
-greenIntensities = g - r/2 - b/2; % How green is your green?
+%greenIntensities = g - r/2 - b/2; % How green is your green?
+redIntensities = r - g/2 - b/2;
 
 %% Threshold the image to find the regions that we consider to be green enough
-bwImg = greenIntensities > greenThreshold;
+bwImg = redIntensities > redThreshold;
 
 % Find indices of green pixels in the image
 [row, col] = find(bwImg); %Where is the green? 
@@ -57,21 +60,21 @@ bwImg = greenIntensities > greenThreshold;
 
     % Find center of the green ball in the captured image
     if ~isempty(row) && ~isempty(col)
-        XgreenCentre = round(mean(row));
-        YgreenCenter = round(mean(col));
+        XredCentre = round(mean(row));
+        YredCenter = round(mean(col));
         
 %         if toc(tim) > 5  %Take a lookie at bwImg and playwith it with respect to green center (X,Y)
 %             a = 2;
 %         end
         
         if length(row) > 299 && length(col) > 299      
-        addpoints(droneLine, XgreenCentre, YgreenCenter ); %%%%%%%%%%%%%%%%% Plot Green Location
+        addpoints(droneLine, XredCentre, YredCenter ); %%%%%%%%%%%%%%%%% Plot Green Location
         end
         
         % Find the displacement of the green ball from the centre of the
         % image
-        rowOffset = (nRows/2) - XgreenCentre;
-        colOffset = (nCols/2) - YgreenCenter;
+        rowOffset = (nRows/2) - XredCentre;
+        colOffset = (nCols/2) - YredCenter;
         
         % Display original and binary image
         %subplot(1,2,1); imshow(img);
