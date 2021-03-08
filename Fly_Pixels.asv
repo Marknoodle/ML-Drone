@@ -1,25 +1,49 @@
 
 
+%%% CURRENT OBJECTIVE: Place the drone down somewhere and have it... 
+%%%                     1) Obtain drone start position ✓
+%%%                     2) Obtain angle between drone and fly to point ✓
+%%%                     3) Have Drone take off, then turn towards fly to point ✓
+%%%                     4) Fly drone to ONE fly to point then land ✓
+%%%                     5) Fly drone to several fly to points all in one flight then land 
+%%%                     6) Create method to obtain fly to points from shape
+%%%                     7) Track drone's flight path in real time using green tracking algorithm and drone height
 
+%LIGHTS OFF
 mycam = webcam('j5 WebCam JVCU100'); %%% The argument is the usb camera in the research room: 'j5 WebCam JVCU100'
 preview(mycam)
 
 
-flyToPoint = [640,360];
+flyToPoint = [493,512]; % Arbitrary Pixel Point (for now). Use "Green Pixel Marking" method to obtain pixel coordinate(s).
+%^^^ Next step will be to use a list of several fly to x&y points
 
-[bwImg,Ydrone,Xdrone] = GreenPosition(mycam);
+% [bwImg,Ydrone,Xdrone] = Green OR Red Position(mycam); will return the X&Y locations of the drones position WRT color. 
+[bwImgG,YGdrone,XGdrone] = GreenPosition(mycam);
+[bwImgR,YRdrone,XRdrone] = RedPosition(mycam);
 
 
-pixelDistance = pdist([flyToPoint;Xdrone,Ydrone] ,'euclidean'); %1 meter is about 295 pixels
-[Angle,Radian]=getAngle([Xdrone,Ydrone],flyToPoint);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TURN ANGLE CALCULATION START
+GreenPos = [XGdrone,YGdrone]; % OBSOLETE. MAY DELETE SOON
+
+R_To_Gp_Dis = pdist([GreenPos(1),GreenPos(2);XRdrone,YRdrone] ,'euclidean'); %Red to new Green Position
+R_To_Fp_Dis = pdist([XRdrone,YRdrone;flyToPoint(1),flyToPoint(2)] ,'euclidean'); %Red to flyToPoint
+Gp_To_Fp_Dis = pdist([GreenPos(1),GreenPos(2);flyToPoint(1),flyToPoint(2)] ,'euclidean'); %new Green Position to flyToPoint
 
 
-flyDistance = pixelDistance * (1/295); %calculate actual flight distance
-trueAngle = deg2rad(180 - Angle);  
-%Q4 && Q3
+if flyToPoint(1) < GreenPos(1) %Determine if the fly to point is to the left of drone
+    turnAngle = Determine_Angle(R_To_Gp_Dis, R_To_Fp_Dis, Gp_To_Fp_Dis);
+     turnAngle = -turnAngle; %If so we need to turn left (counter clockwise/negative turnAngle)
+else %Otherwise the fly to point is to the right of drone
+    turnAngle = Determine_Angle(R_To_Gp_Dis, R_To_Fp_Dis, Gp_To_Fp_Dis); %We need to turn right (clockwise/positive turnAngle)
+end
 
-trueAngle = deg2rad(-1 *(Angle - Angle));  
-%Q1 %% Q2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TURN ANGLE CALCULATION END
+
+
+flyDistance = Gp_To_Fp_Dis * (1/295); %Calculate actual flight distance in meters from pixel distance
+%%% FROM MY OWN MEASUREMENTS: 1 meter is ~ 295 pixels. (Onlt for this particular set-up)
+
+
 
 % LIGHTS ON
 r = ryze();%Connect to Drone and Make Drone Obj
@@ -27,9 +51,7 @@ r = ryze();%Connect to Drone and Make Drone Obj
 speed = .5; %Meters/Sec
 takeoff(r);
 
-if abs(trueAngle) > deg2rad(5) % we do not want to turn if the angle is really really small (replace 2000 with 5 later)
-turn(r,trueAngle);
-end
+turn(r,deg2rad(turnAngle)); %Turn to face flyToPoint
 
 moveforward(r, 'Distance', flyDistance, 'Speed', speed, 'WaitUntilDone', true);
 
@@ -52,7 +74,7 @@ function [bwImg,XgreenCentre,YgreenCenter] = GreenPosition(mycam)
 
 tim = tic;
 duration = 2;
-greenThreshold = 25;  %The "Green-ness" level
+greenThreshold = 30;  %The "Green-ness" level
 while(toc(tim) < duration)
 
 img = snapshot(mycam);
@@ -100,77 +122,68 @@ end
 end
 
 
+function [bwImg,XredCentre,YredCenter] = RedPosition(mycam)
 
-%% Used to measure how far we should turn to fly to point
-%% Borrowed from https://www.mathworks.com/matlabcentral/fileexchange/60148-get-angle-and-radian-between-two-points
+tim = tic;
+duration = 2;
+redThreshold = 60;  %The "Red-ness" level
+while(toc(tim) < duration)
 
-function [Angle,Radian]=getAngle(point_O,point_P)
-%Input O-(x1,y1) and P(x2,y2)points
-%Output Angle And Radian
-%devloper Er.Abbas Manthiri S
-%Email-abbasmanthiribe@gmail.com
-%Angle get accurate if line length is high
-if nargin~=2
-    [row_O,col_O]=size(point_O);
-    if row_O==4
-        point_P= point_O(3:4,:);
-        point_O= point_O(1:2,:);
-    elseif col_O==4
-        point_P= point_O(:,3:4);
-        point_O= point_O(1:1:2);
-    else
-        error('Input Type is Wrong')
+img = snapshot(mycam);
+
+    
+%% Extract RGB color components from the FPV camera image
+r = img(:,:,1);
+g = img(:,:,2);
+b = img(:,:,3);
+
+%% Calculate the number of rows and coloumns in the FPV camera image
+nRows = size(img, 1);
+nCols = size(img, 2);
+
+%% Approximate the intensity of red components in the image
+redIntensities = r - g/2 - b/2;
+
+%% Threshold the image to find the regions that we consider to be red enough
+bwImg = redIntensities > redThreshold;
+
+% Find indices of red pixels in the image
+[row, col] = find(bwImg); %Where is the red? 
+
+    
+    % Find red pixels and track the ball using drone if there are enough red pixels in the image
+
+    % Find center of the green ball in the captured image
+    if ~isempty(row) && ~isempty(col)
+        XredCentre = round(mean(row));
+        YredCenter = round(mean(col));
+        
+%         if toc(tim) > 5  %Take a lookie at bwImg and playwith it with respect to red center (X,Y)
+%             a = 2;
+%         end
+        
+
+        imshow(bwImg)
     end
+
+
+
+pause(0.1);
 end
-if ~(isnumeric(point_O) && isnumeric(point_P))
-    error('Inputs Must be numeric value')
+
 end
-[row_O,col_O]=size(point_O);
-[row_P,col_P]=size(point_P);
-if ~(isvector(point_O) && isvector(point_P))
-    if row_O~=row_P && col_O==col_P && col_O==2
-        if row_O>row_P && row_P==1
-            point_P=repmat(point_P,row_O,1);
-        elseif row_O<row_P && row_O==1
-            point_O=repmat(point_O,row_P,1);
-        else
-            error('Matrix Dimention must agree')
-        end
-    elseif col_O~=col_P && row_O==row_P && row_O==2
-        if col_O>col_P && col_P==1
-            point_P=repmat(point_P',col_O,1);
-        elseif col_O<col_P && col_O==1
-            point_O=repmat(point_O',col_P,1);
-        else
-            error('Matrix Dimention must agree')
-        end
-    else
-        error('Input format is wrong')
-    end
-else
-    if length(point_O)==length(point_P)
-        point_O=transpose(point_O(:));
-        point_P=transpose(point_P(:));
-    else
-        error('Input must be same size')
-    end
+
+
+
+
+function [Deg_Angle] = Determine_Angle(a,b,c)
+
+Deg_Angle = acosd( ( (a^2) + (b^2) - (c^2) )/( 2*a*b) );    %Modified law of cosines 
+
 end
-X=point_P(:,1)-point_O(:,1);
-Y=point_P(:,2)-point_O(:,2);
-Z=sqrt(X.^2+Y.^2);
-Angle=zeros(size(Z));
-Amax=360;
-X1=point_O(:,1);
-X2=point_P(:,1);
-Y1=point_O(:,2);
-Y2=point_P(:,2);
-X=X2-X1;
-Y=Y2-Y1;
-X=X./Z;
-Y=Y./Z;
-Angle(sign(Y2)>0)=acosd(X(sign(Y2)>0));
-Angle(sign(Y2)<0  & sign(X2)>0)=Amax+asind(Y(sign(Y2)<0  & sign(X2)>0));
-Angle(~(sign(Y2)>0  | (sign(Y2)<0  & sign(X2)>0)))=Amax-acosd(X(~(sign(Y2)>0  | (sign(Y2)<0  & sign(X2)>0))));
-Angle(Angle==Amax)=0;
-Radian=Angle*pi/180;
-end
+
+
+
+
+
+

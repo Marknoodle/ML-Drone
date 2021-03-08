@@ -26,7 +26,7 @@ ylabel('y-axis (perpendicular to camera in meters')
 
 tim = tic;
 duration = 7;
-greenThreshold = 25;  %The "Green-ness" level
+greenThreshold = 40;  %The "Green-ness" level
 minOffset = 30;
 while(toc(tim) < duration)
 
