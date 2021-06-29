@@ -80,7 +80,7 @@ def find_color(color, img):
 
     lower_masks = {
         'red': [140, 50, 200],
-        'green': [30, 50, 100],
+        'green': [30, 50, 22],
         'blue': [80, 25, 200],
     }
 
@@ -131,7 +131,7 @@ def find_rect_center(filtered):
 
     # loop through contours and ignore ones smaller than 500 area and if they are not a rectangle
     for c in contours:
-        if cv2.contourArea(c) < 500:
+        if cv2.contourArea(c) < 10:
             cv2.drawContours(ignored_contours, [c], -1, 0, -1)
             continue
         if not is_contour_rectangle(c):
@@ -139,7 +139,9 @@ def find_rect_center(filtered):
 
     # create an image with only good contours and refined the contours
     rectangles = cv2.bitwise_and(thresh, thresh, mask=ignored_contours)
+
     contours, hierarchy = cv2.findContours(rectangles, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    rectangles = cv2.cvtColor(rectangles, cv2.COLOR_GRAY2BGR)
 
     # create a list to hold [x,y] 
     centers = []
@@ -201,40 +203,22 @@ def live_tracking(delay, camera_index):
     cv2.destroyAllWindows()
 
 
-def find_all_centers(camera_index):
+def combine_photos(list):
     """
-        Function to find the centers of the blue, green, and red points
-        Takes the argument camera_index
-        Returns three lists in the order red, green, blue and a combined image
+        Function to combine photots.
+        Argument is the list of photos
     """
+    dst = list[0]
 
-    # get a picture
-    img = snap(camera_index)
-
-    # filter the different colors from the picture
-    red_filtered = find_color('red', img)
-    blue_filtered = find_color('blue', img)
-    green_filtered = find_color('green', img)
-
-    # find the coordinates of the rectangles
-    red_center, red_rectangle = find_rect_center(red_filtered)
-    blue_center, blue_rectangle = find_rect_center(blue_filtered)
-    green_center, green_rectangle = find_rect_center(green_filtered)
-
-    # combine the photos
-
-    image_data = [red_rectangle, blue_rectangle, green_rectangle]
-    dst = image_data[0]
-
-    for i in range(len(image_data)):
+    for i in range(len(list)):
         if i == 0:
             pass
         else:
             alpha = 1.0 / (i + 1)
             beta = 1.0 - alpha
-            dst = cv2.addWeighted(image_data[i], alpha, dst, beta, 0.0)
+            dst = cv2.addWeighted(list[i], alpha, dst, beta, 0.0)
 
-    return red_center, green_center, blue_center, dst
+    return dst
 
 
 def distance_formula(point1, point2):
@@ -259,7 +243,7 @@ def find_mid_point(point1, point2):
 
     # x = (x1 + x2)/2 and y = (y1 + y2)/2
     x = (point1[0] + point2[0]) / 2
-    y = (point1[0] + point2[0]) / 2
+    y = (point1[1] + point2[1]) / 2
     mid_point = [x, y]
     return mid_point
 
@@ -285,20 +269,15 @@ def calculate_angle(point):
     """
 
     # because inverse tangent has limitations, we have to do a little bit of checking to get a proper angle.
-    angle = math.atan((point[1] / point[0])) * (180 / math.pi)
 
-    # if both are positive, the angle is good
-    if point[0] >= 0 and point[1] >= 0:
-        return angle
-    # if both are negative add 180
-    elif point[1] <= 0 and point[0] <= 0:
-        return angle + 180
-    # if y is positive and x is negative
-    elif point[1] >= 0 and point[0] <= 0:
-        return angle + 180
-    # if y is negative and x is positive
-    elif point[1] <= 0 and point[0] >= 0:
-        return angle + 360
+    x = point[0]
+    y = point[1] * -1
+
+    angle = math.atan2(y, x) * (180 / math.pi)
+    if angle < 0:
+        angle = angle + 360
+
+    return angle
 
 
 def nothing(x):
@@ -309,7 +288,7 @@ def nothing(x):
     pass
 
 
-def test_mask_values(camera_index, color):
+def test_mask_values(camera_index, color, gamma):
     """
         Function to test what hsv values are needed in a room.
         Takes the argument camera_index and string color you are looking for.
@@ -336,6 +315,8 @@ def test_mask_values(camera_index, color):
     while True:
         ret, frame = cam.read()
         if ret:
+            frame = gamma_trans(frame, gamma)
+
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
             lower_mask = np.array([cv2.getTrackbarPos(bars[0], win_name),
@@ -353,6 +334,54 @@ def test_mask_values(camera_index, color):
             cv2.imshow(win_name, combined)
 
             if cv2.waitKey(2) == ord('q'):
+                dict_lower = {color+'_lower': [cv2.getTrackbarPos(bars[0], win_name),
+                                      cv2.getTrackbarPos(bars[1], win_name),
+                                      cv2.getTrackbarPos(bars[2], win_name)]}
+                dict_upper = {color+'_upper': [cv2.getTrackbarPos(bars[3], win_name),
+                                      cv2.getTrackbarPos(bars[4], win_name),
+                                      cv2.getTrackbarPos(bars[5], win_name)]}
                 cam.release()
                 cv2.destroyAllWindows()
-                break
+                return dict_lower, dict_upper
+
+
+def gamma_trans(img, gamma):
+    """
+        A function to mimic adjusting camera exposure
+        Takes the arguments image and gamma
+    """
+
+    gamma_table = [np.power(x / 255.0, gamma) * 255.0 for x in range(256)]
+    gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
+    return cv2.LUT(img, gamma_table)
+
+
+def gamma_correct_snap(camera_index, gamma):
+    img = snap(camera_index)
+    gamma_img = gamma_trans(img, gamma)
+    return gamma_img
+
+
+def find_color_test(color, img, lower_dict, upper_dict):
+    """
+        Function that will find a color in a image.
+        Takes two arguments.
+        color is the string color you want to find. 'red' 'green' or 'blue'
+        img is the image you want to find the color in.
+        Returns a filtered image showing only the desired color
+    """
+
+    # convert the image to an HSV color range
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # define the range of color
+    lower_mask = np.array(lower_dict[color + '_lower'])
+    upper_mask = np.array(upper_dict[color + '_upper'])
+
+    # create the mask that will lay over the original image
+    mask = cv2.inRange(hsv, lower_mask, upper_mask)
+    # return mask
+
+    # combine the photos
+    combined = cv2.bitwise_and(img, img, mask=mask)
+    return combined
