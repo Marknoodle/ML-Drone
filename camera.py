@@ -8,7 +8,7 @@ class ImgProcessing:
         Uses OpenCV to initialize connections to a webcam and do image processing.
 
         Attributes:
-            camera_index (int): The camera index of the webcam to be used
+            ref_image (array) = Image used for processing
     """
 
     def __init__(self, camera_index):
@@ -18,9 +18,10 @@ class ImgProcessing:
             Parameters:
                 camera_index (int): The camera index of the webcam to be used
         """
-        self.cam = cv2.VideoCapture(camera_index)
+        self.cam = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+        self.ref_image = self.get_ref_image()
 
-    def snap(self):
+    def get_ref_image(self):
         """
             Function to take a picture using the usb webcam.
 
@@ -32,10 +33,9 @@ class ImgProcessing:
         if ret:
             return frame
 
-    def find_color(self, color, ref_image=None, lower_mask=None, upper_mask=None):
+    def find_color(self, color, lower_mask=None, upper_mask=None):
         """
-            Function to find a color in a specified image. Red, green, or blue.
-            Function will snap a picture if one is not passed
+            Function to find a color in a self.ref_image. Red, green, or blue.
             Default values for lower_mask:
             'red': [140, 50, 200], 'green': [30, 50, 22], and 'blue': [80, 25, 200].
             Default values for upper_mask:
@@ -43,17 +43,12 @@ class ImgProcessing:
 
             Parameters:
                 color (string): The target color as a string
-                ref_image (array): The image you want to find the color in
                 lower_mask (list): The lower list for the mask of the target color in HSV color space
                 upper_mask (list): The upper list for the mask of the target color in HSV color space
 
             Returns:
                 filtered (array): A image that has isolated the target color
         """
-
-        # Take a picture to filter if none is passed
-        if ref_image is None:
-            ref_image = self.snap()
 
         # Define lower and upper mask if no list is passed
         if lower_mask is None:
@@ -73,9 +68,9 @@ class ImgProcessing:
             upper_mask = upper[color]
 
         # Convert the image to hsv, apply a mask using the lower and upper values, and transfer the image back to color
-        hsv_img = cv2.cvtColor(ref_image, cv2.COLOR_BGR2HSV)
+        hsv_img = cv2.cvtColor(self.ref_image, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv_img, lower_mask, upper_mask)
-        filtered = cv2.bitwise_and(ref_image, ref_image, mask=mask)
+        filtered = cv2.bitwise_and(self.ref_image, self.ref_image, mask=mask)
 
         return filtered
 
@@ -89,8 +84,9 @@ class ImgProcessing:
             Returns:
                 has_four (bool): A boolean value that states whether the contour has approximately 4 corners
         """
-
-        perimeter = cv2.arcLenth(contour, True)
+        # find the perimeter of the contours
+        perimeter = cv2.arcLength(contour, True)
+        # approximate the corners
         approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
         has_four = len(approx) == 4
         return has_four
@@ -103,7 +99,7 @@ class ImgProcessing:
                  filtered (array): An image that has been colored filtered.
 
             Returns:
-                rectangles (array): An image with only the rectangles in the filtered image
+                rectangles (array): A binary image with only rectangles present
         """
 
         gray = cv2.cvtColor(filtered, cv2.COLOR_BGR2GRAY)
@@ -136,11 +132,12 @@ class ImgProcessing:
                 rectangles (array): Image that has been color filtered and rectangle filtered
 
             Returns:
-                centers (list): A list containing other lists of [x,y] coordinates.
-                rectangles (array): The original image with its contours and centers drawn
+                centers (list): A list containing lists of [x,y] coordinates. ie-> [[x,y],[x,y],[x,y]] or [[x,y]]
+                rectangles (array): The binary rectangles image with colored colored centers and contours.
         """
         # Find the contour. There should only be rectangles left at this point in the processing stage
         contours, hierarchy = cv2.findContours(rectangles, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        rectangles = cv2.cvtColor(rectangles, cv2.COLOR_GRAY2BGR)
 
         # Create a list to hold the lists of coordinates of the centers [x,y]
         centers = []
@@ -177,7 +174,7 @@ class ImgProcessing:
                 list (list): A list of the photos you want combined
 
             Returns:
-                overlayed (array): an image of the photos overlayed on each other
+                img (array): an image of the photos overlayed on each other
         """
 
         img = list[0]
@@ -190,3 +187,76 @@ class ImgProcessing:
                 img = cv2.addWeighted(list[i], alpha, img, beta, 0.0)
 
         return img
+
+    def get_mask_values(self, window_name):
+        """
+            Function to test mask values for different colors
+
+            Parameters:
+                window_name (string): The name of the window. Ideally the color you are testing for
+
+            Returns:
+                lower_mask (numpy.array): A list of the lower mask values in HSV color space. [0-179, 0-255, 0-255]
+                upper_mask (numpy.array): A list of the upper mask values in HSV color space. [0-179, 0-255, 0-255]
+        """
+
+        # create an empty callback function to use with OpenCV's trackbars
+        def trackbar_pass(x):
+            pass
+
+        # create a window for all the track bars and initialize the trackbars
+        cv2.namedWindow(window_name)
+        cv2.createTrackbar('l_h', window_name, 0, 179, trackbar_pass)
+        cv2.createTrackbar('l_s', window_name, 0, 255, trackbar_pass)
+        cv2.createTrackbar('l_v', window_name, 0, 255, trackbar_pass)
+        cv2.createTrackbar('u_h', window_name, 179, 179, trackbar_pass)
+        cv2.createTrackbar('u-s', window_name, 255, 255, trackbar_pass)
+        cv2.createTrackbar('u-v', window_name, 255, 255, trackbar_pass)
+
+        # continue updating frames
+        while True:
+            ret, frame = self.cam.read()
+            if ret:
+                # make the picture hsv
+                hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+                # define the masks based on the trackbar positions
+                lower_mask = np.array([cv2.getTrackbarPos('l_h', window_name),
+                                       cv2.getTrackbarPos('l_s', window_name),
+                                       cv2.getTrackbarPos('l_v', window_name)])
+
+                upper_mask = np.array([cv2.getTrackbarPos('u_h', window_name),
+                                       cv2.getTrackbarPos('u-s', window_name),
+                                       cv2.getTrackbarPos('u-v', window_name)])
+
+                # apply the mask to the hsv and overlay it on the original image
+                mask = cv2.inRange(hsv, lower_mask, upper_mask)
+                result = cv2.bitwise_and(frame, frame, mask=mask)
+
+                # To place both pictures side by side, cv2 will not accept the binary mask,
+                # so instead we convert it to gray, and then it works
+                mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+                combined = np.concatenate((mask, result), axis=1)
+                # Show both images, side by side
+                cv2.imshow(window_name, combined)
+
+                # Code to exit on 'q' for quit or 'n' for next: common keys
+                if cv2.waitKey(2) == ord('q') or cv2.waitKey(2) == ord('n'):
+                    # destroy the interface and return the trackbar values
+                    cv2.destroyAllWindows()
+                    return lower_mask, upper_mask
+
+    def set_img_gamma(self, gamma):
+        """
+            Function that changes the gamma of the ref_img
+
+            Parameters:
+                gamma (int): The value of gamma you want
+
+            Returns:
+                img (array): gamma corrected img
+        """
+
+        gamma_table = [np.power(x / 255.0, gamma) * 255.0 for x in range(256)]
+        gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
+        return cv2.LUT(self.ref_image, gamma_table)
