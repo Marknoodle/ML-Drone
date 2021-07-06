@@ -1,65 +1,83 @@
-from djitellopy import Tello
-from time import sleep
 import cv2
-import matplotlib
-import numpy as np
-import math
 from camera import ImgProcessing
+from calculations import Calculations
+from time import sleep
+# Instantiate the class and ensure a good ref_image
 
-from functions import *
+processing = ImgProcessing(0)
+
+while True:
+    print("\nHere is the image to be processed...")
+    cv2.imshow('ref_img', processing.ref_image)
+    cv2.waitKey(2000)
+
+    # Filter Colors using masks passed
+    red_filtered = processing.find_color('red', [155, 120, 87], [179, 255, 255])
+    green_filtered = processing.find_color('green', [56, 56, 79], [92, 255, 255])
+    blue_filtered = processing.find_color('blue', [100, 77, 99], [123, 255, 158])
+
+    # Find the rectangles
+    red_rectangle = processing.find_rects(red_filtered)
+    green_rectangle = processing.find_rects(green_filtered)
+    blue_rectangle = processing.find_rects(blue_filtered)
+
+    # find the centers and draw the contour onto the rectangle
+    red_center, red_rect = processing.find_rects_center(red_rectangle)
+    green_center, green_rect = processing.find_rects_center(green_rectangle)
+    blue_center, blue_rect = processing.find_rects_center(blue_rectangle)
+
+    print('\nHere are the centers we found...')
+    print(f"\nred_center: {red_center}\ngreen_center: {green_center}\nblue_center: {blue_center}")
+    if red_center and green_center and blue_center:
+        print('\nGot all the centers!')
+        break
+    else:
+        print('\nDid not find all centers')
+        print("\nGetting new image...")
+        processing.ref_image = processing.get_ref_image()
+        print("\nGot new image...")
 
 
-#
-#
-# def test_mask(camera_index, color, gamma):
-#     """
-#         Function to test what hsv values are needed in a room.
-#         Takes the argument camera_index and string color you are looking for.
-#     """
-#
-#     # connect to the camera
-#     cam = cv2.VideoCapture(camera_index)
-#
-#     # make a list of bars needed
-#     bars = ['l_h_' + color, 'l_s_' + color, 'l_v_' + color,
-#             'u_h_' + color, 'u_s_' + color, 'u_v_' + color]
-#
-#     # create the track bars
-#     win_name = color + '_track'
-#     cv2.namedWindow(win_name)
-#     cv2.createTrackbar(bars[0], win_name, 0, 179, nothing)
-#     cv2.createTrackbar(bars[1], win_name, 0, 255, nothing)
-#     cv2.createTrackbar(bars[2], win_name, 0, 255, nothing)
-#     cv2.createTrackbar(bars[3], win_name, 179, 179, nothing)
-#     cv2.createTrackbar(bars[4], win_name, 255, 255, nothing)
-#     cv2.createTrackbar(bars[5], win_name, 255, 255, nothing)
-#
-#     # continue updating frames
-#     while True:
-#         ret, frame = cam.read()
-#         if ret:
-#             frame = gamma_trans(frame, gamma)
-#
-#             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-#
-#             lower_mask = np.array([cv2.getTrackbarPos(bars[0], win_name),
-#                                    cv2.getTrackbarPos(bars[1], win_name),
-#                                    cv2.getTrackbarPos(bars[2], win_name)])
-#             upper_mask = np.array([cv2.getTrackbarPos(bars[3], win_name),
-#                                    cv2.getTrackbarPos(bars[4], win_name),
-#                                    cv2.getTrackbarPos(bars[5], win_name)])
-#
-#             mask = cv2.inRange(hsv, lower_mask, upper_mask)
-#             result = cv2.bitwise_and(frame, frame, mask=mask)
-#
-#             mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-#             combined = np.concatenate((mask, result), axis=1)
-#             cv2.imshow(win_name, combined)
-#
-#             if cv2.waitKey(2) == ord('q'):
-#                 cam.release()
-#                 cv2.destroyAllWindows()
-#                 break
 
+# make a picture with all rectangles
+rects = [red_rect, green_rect, blue_rect]
+combined_rects = processing.combine_photos(rects)
+
+# instantiate our calculator
+calculator = Calculations()
+
+# find the drone midpoint
+drone_mid_point = calculator.find_mid_point(red_center[0], green_center[0])
+
+# find other points relative to the drone mid point
+red_rtm = calculator.move_origin(red_center[0], drone_mid_point)
+blue_rtm = calculator.move_origin(blue_center[0], drone_mid_point)
+green_rtm = calculator.move_origin(green_center[0], drone_mid_point)
+
+# find the green and blue rotation
+green_rotation = calculator.calculate_angle(green_rtm)
+blue_rotation = calculator.calculate_angle(blue_rtm)
+
+# find the rotation the drone needs to take
+drone_rotation = blue_rotation - green_rotation
+
+if drone_rotation < -180:
+    drone_rotation += 360
+elif drone_rotation > 180:
+    drone_rotation -= 360
+
+# print all the cool stuff
+print(f"\n Drone Mid Point: {drone_mid_point}")
+print(f"\n red_rtm: {red_rtm}\n blue_rtm: {blue_rtm}\n green_rtm: {green_rtm}")
+print(f"\n green rotation: {green_rotation}\n blue rotation: {blue_rotation}")
+print(f"\ndrone rotation: {drone_rotation}")
+
+# add the drone mid point to the rectangle picture
+int_mid = (int(drone_mid_point[0]), int(drone_mid_point[1]))
+cv2.circle(combined_rects, int_mid, 3, [000, 000, 255], -1)
+cv2.imshow('rectangles', combined_rects)
+cv2.waitKey(0)
+
+# print(f"red {red_center}\n green {green_center}\n blue {blue_center}")
 
 

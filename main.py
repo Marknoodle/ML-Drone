@@ -8,9 +8,9 @@ import cv2
 import matplotlib
 import numpy as np
 import math
+import functions
 from functions import *
 from time import sleep
-
 ###############################################################################
 # Main
 ###############################################################################
@@ -34,6 +34,7 @@ while True:
     blue_center, blue_rectangle = find_rect_center(blue_filtered)
 
     # check to see if we actually got coordinates and combine the photos of rectangles if we did
+    print(f"red:{red_center}, blue: {blue_center}, green {green_center}")
     if red_center and green_center and blue_center:
         rectangles = combine_photos([red_rectangle, green_rectangle, blue_rectangle])
         cv2.imshow('rect', rectangles)

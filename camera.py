@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from time import sleep
 
 class ImgProcessing:
     """
@@ -28,10 +28,15 @@ class ImgProcessing:
             Returns:
                 frame: A image captured from the webcam
         """
-        ret, frame = self.cam.read()
+        x = 0
+        while True:
+            sleep(2)
+            ret, frame = self.cam.read()
+            if x == 2:
+                return frame
+            else:
+                x += 1
 
-        if ret:
-            return frame
 
     def find_color(self, color, lower_mask=None, upper_mask=None):
         """
@@ -57,7 +62,9 @@ class ImgProcessing:
                 'green': [30, 50, 22],
                 'blue': [80, 25, 200],
             }
-            lower_mask = lower[color]
+            lower_mask = np.array(lower[color])
+        else:
+            lower_mask = np.array(lower_mask)
 
         if upper_mask is None:
             upper = {
@@ -65,7 +72,9 @@ class ImgProcessing:
                 'green': [90, 255, 255],
                 'blue': [150, 255, 255],
             }
-            upper_mask = upper[color]
+            upper_mask = np.array(upper[color])
+        else:
+            upper_mask = np.array(upper_mask)
 
         # Convert the image to hsv, apply a mask using the lower and upper values, and transfer the image back to color
         hsv_img = cv2.cvtColor(self.ref_image, cv2.COLOR_BGR2HSV)
@@ -114,11 +123,11 @@ class ImgProcessing:
 
         # loop through contours and ignore ones smaller than 10 area and if they are not a rectangle
         for c in contours:
-            if cv2.contourArea(c) < 10:
+            if cv2.contourArea(c) < 20:
                 cv2.drawContours(ignored_contours, [c], -1, 0, -1)
                 continue
-            if not self.has_four_corners(c):
-                cv2.drawContours(ignored_contours, [c], -1, 0, -1)
+            # if not self.has_four_corners(c):
+            #     cv2.drawContours(ignored_contours, [c], -1, 0, -1)
 
         # create an image with only rectangle contours
         rectangles = cv2.bitwise_and(thresh, thresh, mask=ignored_contours)
@@ -161,7 +170,8 @@ class ImgProcessing:
             cv2.circle(rectangles, (center_x, center_y), 1, (0, 0, 255), -1)
 
             # update the center list and append them to the centers list
-            center = [center_x, center_y]
+            center.append(center_x)
+            center.append(center_y)
             centers.append(center)
 
         return centers, rectangles

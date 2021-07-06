@@ -1,3 +1,4 @@
+import math
 class Calculations:
     """
         A class to handle calculating values

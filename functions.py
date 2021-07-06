@@ -21,7 +21,7 @@ def snap(camera_index):
     """
 
     # connect to the camera
-    cam = cv2.VideoCapture(camera_index)
+    cam = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
 
     # grab the frame
     ret, frame = cam.read()
