@@ -228,6 +228,8 @@ class ImgProcessing:
             ret, frame = self.cam.read()
             if ret:
                 # make the picture hsv
+                frame = self.set_gamma(frame, 3)
+
                 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
                 # define the masks based on the trackbar positions
@@ -256,7 +258,7 @@ class ImgProcessing:
                     cv2.destroyAllWindows()
                     return lower_mask, upper_mask
 
-    def set_img_gamma(self, gamma):
+    def set_ref_gamma(self, gamma):
         """
             Function that changes the gamma of the ref_img
 
@@ -269,4 +271,9 @@ class ImgProcessing:
 
         gamma_table = [np.power(x / 255.0, gamma) * 255.0 for x in range(256)]
         gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
-        return cv2.LUT(self.ref_image, gamma_table)
+        self.ref_image = cv2.LUT(self.ref_image, gamma_table)
+
+    def set_gamma(self, img, gamma):
+        gamma_table = [np.power(x / 255.0, gamma) * 255.0 for x in range(256)]
+        gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
+        return cv2.LUT(img, gamma_table)

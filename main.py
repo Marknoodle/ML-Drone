@@ -1,89 +1,72 @@
-# Vision Based Navigation Research
-# Augusta University School of Computer and Cyber Sciences
-# Date Started 5/14/21
-###############################################################################
-
-from djitellopy import Tello
+# from calculations import Calculations
 import cv2
-import matplotlib
-import numpy as np
-import math
-import functions
-from functions import *
-from time import sleep
-###############################################################################
-# Main
-###############################################################################
+from camera import ImgProcessing
 
-# continue taking pictures until a red, green, and blue center have been located
-while True:
-    print('\nFinding centers...')
+processing = ImgProcessing(1)
 
-    # Take a photo and correct its gamma
-    #ref_img = gamma_correct_snap(1, 1)
-    ref_img = snap(1)
+# red_filtered = processing.find_color('red', [155, 120, 87], [179, 255, 255])
+# green_filtered = processing.find_color('green', [56, 56, 79], [ 92, 255, 255])
+# blue_filtered = processing.find_color('blue', [100, 77,  99], [123, 255, 158])
+#
+# # Find the rectangles
+# red_rectangle = processing.find_rects(red_filtered)
+# green_rectangle = processing.find_rects(green_filtered)
+# blue_rectangle = processing.find_rects(blue_filtered)
+#
+# # find the centers and draw the contour onto the rectangle
+# red_center, red_rect = processing.find_rects_center(red_rectangle)
+# green_center, green_rect = processing.find_rects_center(green_rectangle)
+# blue_center, blue_rect = processing.find_rects_center(blue_rectangle)
+#
+# print(f"\nred_center: {red_center}\ngreen_center: {green_center}\nblue_center: {blue_center}")
+#
+# cv2.imshow('red', red_filtered)
+# cv2.imshow('green', green_filtered)
+# cv2.imshow('blue', blue_filtered)
+#
+# cv2.imshow('red_rect', red_rect)
+# cv2.imshow('green_rect', green_rect)
+# cv2.imshow('blue_rect', blue_rect)
+# cv2.waitKey(0)
 
-    # Filter the colors we are looking for
-    red_filtered = find_color('red', ref_img)
-    green_filtered = find_color('green', ref_img)
-    blue_filtered = find_color('blue', ref_img)
+##################
 
-    # find the center points and get a photo of the rectangle
-    red_center, red_rectangle= find_rect_center(red_filtered)
-    green_center, green_rectangle = find_rect_center(green_filtered)
-    blue_center, blue_rectangle = find_rect_center(blue_filtered)
 
-    # check to see if we actually got coordinates and combine the photos of rectangles if we did
-    print(f"red:{red_center}, blue: {blue_center}, green {green_center}")
-    if red_center and green_center and blue_center:
-        rectangles = combine_photos([red_rectangle, green_rectangle, blue_rectangle])
-        cv2.imshow('rect', rectangles)
-        cv2.waitKey(2)
-        cv2.destroyAllWindows()
-        break
-    else:
-        print('\nFailed to find all values')
-        print(f'\nred: {red_center}\ngreen:{green_center}\nblue:{blue_center}')
-        print('\nTrying again in 5 seconds')
-        rectangles = combine_photos([red_rectangle, green_rectangle, blue_rectangle])
-        cv2.imshow('rect', rectangles)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        sleep(5)
+# Default color filtering
+# red_filtered = processing.find_color('red')
+# green_filtered = processing.find_color('green')
+# blue_filtered = processing.find_color('blue')
 
-print(f"\n\nCenters Found \nRed Center: {red_center}\nBlue Center: {blue_center}\nGreen Center: {green_center}")
 
-# find the mid_point
-mid_point = find_mid_point(green_center, red_center)
 
-# find red point relative to mid
-red_rtm = move_origin(red_center, mid_point)
-print(f"\nred relative to midpoint: {red_rtm}")
+# Testing Mask Values
+lr, ur = processing.get_mask_values('red')
+lg, ug = processing.get_mask_values('green')
+lb, ub = processing.get_mask_values('blue')
 
-# find green point relative to mid
-green_rtm = move_origin(green_center, mid_point)
-print(f"\ngreen relative to midpoint: {green_rtm}")
+# # Mask Value color filtering
+red_filtered = processing.find_color('red', lr, ur)
+green_filtered = processing.find_color('green', lg, ug)
+blue_filtered = processing.find_color('blue', lb, ub)
+#
+#
+#
+print(f"lr: {lr}, ur:{ur}\n")
+print(f"lg: {lg}, ug:{ug}\n")
+print(f"lb: {lb}, ub:{ub}\n")
 
-# find blue point relative to mid
-blue_rtm = move_origin(blue_center, mid_point)
-print(f"\nblue relative to midpoint: {blue_rtm}")
 
-# find the rotation of green and blue points relative to the mid of the drone
-green_rotation = calculate_angle(green_rtm)
-blue_rotation = calculate_angle(blue_rtm)
-print(f"\nBlue rotation: {blue_rotation}\nGreen rotation: {green_rotation}")
+# red_filtered = processing.find_color('red', [0, 0, 0], [31, 255, 255])
+# green_filtered = processing.find_color('green', [42, 0, 114], [75, 255, 255])
+# blue_filtered = processing.find_color('blue', [ 78,0, 115], [122, 255, 255])
 
-# calculate the rotation the drone needs
-rotation = blue_rotation - green_rotation
-if rotation < -180:
-    rotation += 360
-elif rotation > 180:
-    rotation -= 360
+# red_rect = processing.find_rects(red_filtered)
+# green_rect = processing.find_rects(green_filtered)
+# blue_rect = processing.find_rects(blue_filtered)
 
-print(f"\nRotation: {rotation}")
 
-# add the center to the rectangle pictures and show it
-int_mid = (int(mid_point[0]), int(mid_point[1]))
-cv2.circle(rectangles, int_mid, 3, [000, 255, 000], -1)
-cv2.imshow('rectangles', rectangles)
+cv2.imshow('red', red_rect)
+cv2.imshow('green', green_rect)
+cv2.imshow('blue', blue_rect)
 cv2.waitKey(0)
+
