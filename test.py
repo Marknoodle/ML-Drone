@@ -65,8 +65,8 @@ print(f"lb: {lb}, ub:{ub}\n")
 # blue_rect = processing.find_rects(blue_filtered)
 
 
-cv2.imshow('red', red_rect)
-cv2.imshow('green', green_rect)
-cv2.imshow('blue', blue_rect)
+cv2.imshow('red', red_filtered)
+cv2.imshow('green', green_filtered)
+cv2.imshow('blue', blue_filtered)
 cv2.waitKey(0)
 

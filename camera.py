@@ -100,15 +100,15 @@ class ImgProcessing:
         has_four = len(approx) == 4
         return has_four
 
-    def find_rects(self, filtered):
+    def find_good_contours(self, filtered):
         """
-            Function to find rectangles in an image that has been color filtered.
+            Function to find the good contours in an image that has been color filtered.
 
             Parameters:
                  filtered (array): An image that has been colored filtered.
 
             Returns:
-                rectangles (array): A binary image with only rectangles present
+                good_contours (array): A binary image with only good contours present
         """
 
         gray = cv2.cvtColor(filtered, cv2.COLOR_BGR2GRAY)
@@ -130,23 +130,23 @@ class ImgProcessing:
             #     cv2.drawContours(ignored_contours, [c], -1, 0, -1)
 
         # create an image with only rectangle contours
-        rectangles = cv2.bitwise_and(thresh, thresh, mask=ignored_contours)
-        return rectangles
+        good_contours = cv2.bitwise_and(thresh, thresh, mask=ignored_contours)
+        return good_contours
 
-    def find_rects_center(self, rectangles):
+    def find_contours_center(self, good_contours):
         """
-            Function to find the center of rectangles in an image
+            Function to find the center of the contours in an image
 
             Parameters:
-                rectangles (array): Image that has been color filtered and rectangle filtered
+                good_contours (array): Image that has been color filtered and only contains good contours
 
             Returns:
                 centers (list): A list containing lists of [x,y] coordinates. ie-> [[x,y],[x,y],[x,y]] or [[x,y]]
-                rectangles (array): The binary rectangles image with colored colored centers and contours.
+                good_contours (array): The contour image with colored centers and contours.
         """
         # Find the contour. There should only be rectangles left at this point in the processing stage
-        contours, hierarchy = cv2.findContours(rectangles, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        rectangles = cv2.cvtColor(rectangles, cv2.COLOR_GRAY2BGR)
+        contours, hierarchy = cv2.findContours(good_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        good_contours = cv2.cvtColor(good_contours, cv2.COLOR_GRAY2BGR)
 
         # Create a list to hold the lists of coordinates of the centers [x,y]
         centers = []
@@ -166,15 +166,15 @@ class ImgProcessing:
                 center_x, center_y = 0, 0
 
             # draw the contour and center of the rectangle
-            cv2.drawContours(rectangles, [c], -1, (0, 255, 0), 2)
-            cv2.circle(rectangles, (center_x, center_y), 1, (0, 0, 255), -1)
+            cv2.drawContours(good_contours, [c], -1, (0, 255, 0), 2)
+            cv2.circle(good_contours, (center_x, center_y), 1, (0, 0, 255), -1)
 
             # update the center list and append them to the centers list
             center.append(center_x)
             center.append(center_y)
             centers.append(center)
 
-        return centers, rectangles
+        return centers, good_contours
 
     def combine_photos(self, list):
         """
