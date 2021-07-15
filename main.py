@@ -4,12 +4,13 @@ from calculations import Calculations
 from djitellopy import Tello
 from time import sleep
 
-# Instantiate the class and ensure a good ref_image
+# Instantiate the classes and ensure a good ref_image
 processing = ImgProcessing(1)
-processing.set_ref_gamma(3)
+calculator = Calculations()
 
 # Do all the image processing and get the centers
 while True:
+    processing.set_ref_gamma(3)
     print("\nHere is the image to be processed...")
     cv2.imshow('ref_img', processing.ref_image)
     cv2.waitKey(1000)
@@ -48,9 +49,6 @@ while True:
 # make a picture with all rectangles
 conts = [red_conts, green_conts, blue_conts]
 conts_combined = processing.combine_photos(conts)
-
-# instantiate our calculator class
-calculator = Calculations()
 
 # find the drone midpoint -> The distance between green and blue points
 drone_mid_point = calculator.find_mid_point(blue_centers[0], green_centers[0])
