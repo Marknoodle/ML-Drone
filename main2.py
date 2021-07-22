@@ -140,6 +140,6 @@ for destination in destinations:
     tello.move_forward(int(mid_to_des))
     tello.land()
 
-    # give the drone time to settle and get a new image
+    # get a new image
     processing.ref_image = processing.get_ref_image()
     processing.set_ref_gamma(3)

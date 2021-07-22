@@ -1,6 +1,7 @@
 import cv2
-import numpy as np
+import numpy as np # https://numpy.org/doc/stable/user/absolute_beginners.html#working-with-mathematical-formulas
 from time import sleep
+import pyrealsense2 as rs # https://intelrealsense.github.io/librealsense/python_docs/_generated/pyrealsense2.html
 
 class ImgProcessing:
     """
@@ -9,6 +10,7 @@ class ImgProcessing:
 
         Attributes:
             ref_image (array) = Image used for processing
+            cam (object) = The usb camera opened using cv2
     """
 
     def __init__(self, camera_index):
@@ -198,12 +200,13 @@ class ImgProcessing:
 
         return img
 
-    def get_mask_values(self, window_name):
+    def get_mask_values(self, window_name, gamma):
         """
             Function to test mask values for different colors
 
             Parameters:
                 window_name (string): The name of the window. Ideally the color you are testing for
+                gamma (int): The gamma you want the image to be to test for masks in
 
             Returns:
                 lower_mask (numpy.array): A list of the lower mask values in HSV color space. [0-179, 0-255, 0-255]
@@ -227,8 +230,8 @@ class ImgProcessing:
         while True:
             ret, frame = self.cam.read()
             if ret:
-                # make the picture hsv
-                frame = self.set_gamma(frame, 3)
+                # set the gamma and make the picture hsv
+                frame = self.set_gamma(frame, gamma)
 
                 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -274,6 +277,48 @@ class ImgProcessing:
         self.ref_image = cv2.LUT(self.ref_image, gamma_table)
 
     def set_gamma(self, img, gamma):
+        """
+            Function that changes the gama of a specified img
+
+            Parameters:
+                img (array) = The image you want to change the gamma of
+                gamma (int) = The game you want the img to be set to
+        """
         gamma_table = [np.power(x / 255.0, gamma) * 255.0 for x in range(256)]
         gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
         return cv2.LUT(img, gamma_table)
+
+class RealsenseProcessing(ImgProcessing):
+    """
+        Class to process images picked up with Intel's Realsense camera
+        Uses the wrapper pyrealsense2 to initialize connections to the camera
+        Inherits functions of ImgProcessing
+
+        Attributes:
+            ref_image (array) = Image used for processing
+    """
+
+    def __init__(self):
+        """
+            Initialize the settings for the Realsense Camera
+        """
+        self.pipeline = rs.pipeline()
+
+        self.config = rs.config()
+        self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+        self.pipeline.start(self.config)
+
+        self.ref_image = self.get_ref_image()
+
+    def get_ref_image(self):
+        """
+            Function to take a picture using the usb webcam.
+
+            Returns:
+                color_arr (array) : A image captured from the webcam represented as an array
+        """
+        frames = self.pipeline.wait_for_frames()
+        color_img = frames.get_color_frame()
+        color_arr = np.asanyarray(color_img.get_data())
+        return color_arr
