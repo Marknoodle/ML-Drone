@@ -1,4 +1,6 @@
 import cv2
+from time import sleep
+from djitellopy import Tello
 from camera import ImgProcessing
 from calculations import Calculations
 
@@ -40,7 +42,7 @@ while True:
     else:
         print('Did not get any destination points...\n')
         print('Getting new img...\n')
-        processing.get_ref_image()
+        processing.ref_image = processing.get_ref_image()
         processing.set_ref_gamma(3)
         print('Got new image...\n')
 
@@ -54,6 +56,9 @@ while True:
         6. Find the real distance from the drone mid point to the destination
         7. Fly the drone
 """
+tello = Tello()
+tello.connect()
+tello.set_speed(10)
 
 for destination in destinations:
     # Find the drone -- blue and green point
@@ -79,7 +84,7 @@ for destination in destinations:
         else:
             print('Did not find the drone...\n')
             print('Getting new img...\n')
-            processing.get_ref_image()
+            processing.ref_image = processing.get_ref_image()
             processing.set_ref_gamma(3)
             print('Got new img...\n')
 
@@ -88,14 +93,53 @@ for destination in destinations:
     conts_combined = processing.combine_photos(conts)
 
     # find the drone midpoint -> The distance between green and blue points
-    drone_mid_point = calculator.find_mid_point(blue_centers, green_centers)
+    drone_mid_point = calculator.find_mid_point(blue_centers[0], green_centers[0])
 
+    # find other points relative to the drone mid point
+    destination_rtm = calculator.move_origin(destination, drone_mid_point)
+    blue_rtm = calculator.move_origin(blue_centers[0], drone_mid_point)
+    green_rtm = calculator.move_origin(green_centers[0], drone_mid_point)
 
+    # find the green and red rotation
+    # green rotation is the direction the drone is facing
+    # red rotation is the angle of the destination point
+    green_rotation = calculator.calculate_angle(green_rtm)
+    destination_rotation = calculator.calculate_angle(destination_rtm)
 
+    # find the rotation the drone needs to take to face the destination
+    drone_rotation = destination_rotation - green_rotation
 
+    if drone_rotation < -180:
+        drone_rotation += 360
+    elif drone_rotation > 180:
+        drone_rotation -= 360
 
+    # calculate the pixel distance and then multiply by a fraction to turn into cm distance
+    mid_to_des = calculator.distance_formula(destination, drone_mid_point) * 100 / 192
 
+    # print all the cool stuff
+    print(f'Navigation to point: {destination}\n')
+    print(f'Moving {mid_to_des}cm...\n')
+    print(f"\n Drone Mid Point: {drone_mid_point}")
+    print(f"\n red_rtm: {destination_rtm}\n blue_rtm: {blue_rtm}\n green_rtm: {green_rtm}")
+    print(f"\n green rotation: {green_rotation}\n red rotation: {destination_rotation}")
+    print(f"\ndrone rotation: {drone_rotation}")
+    print(f"")
 
+    # add the drone mid point to the rectangle picture
+    int_mid = (int(drone_mid_point[0]), int(drone_mid_point[1]))
+    cv2.circle(conts_combined, int_mid, 1, [000, 000, 255], -1)
+    cv2.imshow('rectangles', conts_combined)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
+    # Tell the drone what to do
+    tello.takeoff()
+    sleep(2)
+    tello.rotate_counter_clockwise(int(drone_rotation))
+    tello.move_forward(int(mid_to_des))
+    tello.land()
 
-#only grab
+    # give the drone time to settle and get a new image
+    processing.ref_image = processing.get_ref_image()
+    processing.set_ref_gamma(3)

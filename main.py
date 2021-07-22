@@ -16,14 +16,14 @@ while True:
     cv2.waitKey(1000)
 
     # Filter Colors using masks passed gcc colors
-    # red_filtered = processing.find_color('red', [172, 99, 10], [179, 254, 255])
-    # green_filtered = processing.find_color('green', [46, 53, 53], [79, 255, 255])
-    # blue_filtered = processing.find_color('blue', [80, 25, 166], [101, 255, 255])
-
-    # Filter Colors using masks passed home colors
     red_filtered = processing.find_color('red', [172, 99, 10], [179, 254, 255])
     green_filtered = processing.find_color('green', [46, 53, 53], [79, 255, 255])
     blue_filtered = processing.find_color('blue', [80, 25, 166], [101, 255, 255])
+
+    # # Filter Colors using masks passed home colors
+    # red_filtered = processing.find_color('red', [172, 99, 10], [179, 254, 255])
+    # green_filtered = processing.find_color('green', [46, 53, 53], [79, 255, 255])
+    # blue_filtered = processing.find_color('blue', [80, 25, 166], [101, 255, 255])
 
     # Find the good contours
     red_conts = processing.find_good_contours(red_filtered)
@@ -68,7 +68,7 @@ red_rotation = calculator.calculate_angle(red_rtm)
 drone_rotation = red_rotation - green_rotation
 
 # calculate the pixel distance and then multiply by a fraction to turn into cm distance
-mid_to_des = calculator.distance_formula(red_rtm, drone_mid_point) * 100/400
+mid_to_des = calculator.distance_formula(red_rtm, drone_mid_point) * 100/395
 
 if drone_rotation < -180:
     drone_rotation += 360
@@ -89,26 +89,26 @@ cv2.imshow('rectangles', conts_combined)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-# delay = 2
-# tello = Tello()
-# sleep(delay)
-#
-# tello.connect()
-# sleep(delay)
-#
-# tello.set_speed(10)
-# sleep(delay)
-#
-# tello.takeoff()
-# sleep(delay)
-#
-# tello.rotate_counter_clockwise(int(drone_rotation))
-# sleep(delay)
-#
-# tello.move_forward(int(mid_to_des))
-# sleep(delay)
-#
-# tello.land()
+delay = 2
+tello = Tello()
+sleep(delay)
+
+tello.connect()
+sleep(delay)
+
+tello.set_speed(10)
+sleep(delay)
+
+tello.takeoff()
+sleep(delay)
+
+tello.rotate_counter_clockwise(int(drone_rotation))
+sleep(delay)
+
+tello.move_forward(int(mid_to_des))
+sleep(delay)
+
+tello.land()
 
 
 
