@@ -3,21 +3,26 @@ from time import sleep
 from djitellopy import Tello
 from camera import ImgProcessing
 from calculations import Calculations
+import numpy as np
 
 # initialize camera and calculator
 processing = ImgProcessing(1)
 processing.set_ref_gamma(3)
 calculator = Calculations()
 
+# lw[0 0 0], uw:[  0   0 255]
+lower_red_mask = [0, 0, 0]
+upper_red_mask = [0, 0, 255]
+
 # define masks for color filtering
-lower_red_mask = [172, 99, 10]
-upper_red_mask = [179, 254, 255]
+# lower_red_mask = [172, 99, 10]
+# upper_red_mask = [179, 254, 255]
 
 lower_green_mask = [46, 53, 53]
 upper_green_mask = [79, 255, 255]
 
-lower_blue_mask = [80, 25, 166]
-upper_blue_mask = [101, 255, 255]
+lower_blue_mask = [70, 25, 166]     # [ 70  25 166], ur:[112 255 255]
+upper_blue_mask = [112, 255, 255]
 
 # Find destination points -- red points
 while True:
@@ -27,7 +32,7 @@ while True:
 
     # find the red points
     red_filtered = processing.find_color('red', lower_red_mask, upper_red_mask)
-    red_conts = processing.find_good_contours(red_filtered)
+    red_conts = processing.find_good_contours(red_filtered, discarded_area=1000)
     red_centers, red_conts = processing.find_contours_center(red_conts)
 
     print(f'The destination points are {red_centers}\n')
@@ -58,8 +63,11 @@ while True:
 """
 tello = Tello()
 tello.connect()
-tello.set_speed(10)
+tello.set_speed(20)
+tello.takeoff()
 
+counter = 1
+mid_points_list = np.array([])
 for destination in destinations:
     # Find the drone -- blue and green point
     while True:
@@ -70,8 +78,8 @@ for destination in destinations:
         green_filtered = processing.find_color('green', lower_green_mask, upper_green_mask)
         blue_filtered = processing.find_color('blue', lower_blue_mask, upper_blue_mask)
 
-        green_conts = processing.find_good_contours(green_filtered)
-        blue_conts = processing.find_good_contours(blue_filtered)
+        green_conts = processing.find_good_contours(green_filtered, discarded_area=10)
+        blue_conts = processing.find_good_contours(blue_filtered, discarded_area=20)
 
         green_centers, green_conts = processing.find_contours_center(green_conts)
         blue_centers, blue_conts = processing.find_contours_center(blue_conts)
@@ -93,7 +101,14 @@ for destination in destinations:
     conts_combined = processing.combine_photos(conts)
 
     # find the drone midpoint -> The distance between green and blue points
+    # append the drone mid points to a list
     drone_mid_point = calculator.find_mid_point(blue_centers[0], green_centers[0])
+    mid_points_list = np.append(mid_points_list, drone_mid_point)
+
+    # add the first point to the destinations so that we go back to it at the end
+    if counter == 1:
+        destinations.append(drone_mid_point)
+    counter += 1
 
     # find other points relative to the drone mid point
     destination_rtm = calculator.move_origin(destination, drone_mid_point)
@@ -130,16 +145,20 @@ for destination in destinations:
     int_mid = (int(drone_mid_point[0]), int(drone_mid_point[1]))
     cv2.circle(conts_combined, int_mid, 1, [000, 000, 255], -1)
     cv2.imshow('rectangles', conts_combined)
-    cv2.waitKey(0)
+    cv2.waitKey(2)
     cv2.destroyAllWindows()
 
     # Tell the drone what to do
-    tello.takeoff()
+
     sleep(2)
     tello.rotate_counter_clockwise(int(drone_rotation))
+    sleep(2)
     tello.move_forward(int(mid_to_des))
-    tello.land()
+
 
     # get a new image
     processing.ref_image = processing.get_ref_image()
     processing.set_ref_gamma(3)
+
+
+tello.land()

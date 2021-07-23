@@ -3,11 +3,11 @@ from camera import ImgProcessing
 
 # Initalize the camera with the proper camera index
 processing = ImgProcessing(1)
-
+gamma = 3
 # Use the Trackbar function to test the mask values for lower color and upper colors
-lr, ur = processing.get_mask_values('red')
-lg, ug = processing.get_mask_values('green')
-lb, ub = processing.get_mask_values('blue')
+lr, ur = processing.get_mask_values('red', gamma)
+lg, ug = processing.get_mask_values('green', gamma)
+lb, ub = processing.get_mask_values('blue', gamma)
 
 # Test the masks using our color filtering function
 red_filtered = processing.find_color('red', lr, ur)

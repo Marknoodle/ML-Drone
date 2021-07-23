@@ -102,7 +102,7 @@ class ImgProcessing:
         has_four = len(approx) == 4
         return has_four
 
-    def find_good_contours(self, filtered):
+    def find_good_contours(self, filtered, discarded_area):
         """
             Function to find the good contours in an image that has been color filtered.
 
@@ -125,7 +125,7 @@ class ImgProcessing:
 
         # loop through contours and ignore ones smaller than 10 area and if they are not a rectangle
         for c in contours:
-            if cv2.contourArea(c) < 20:
+            if cv2.contourArea(c) < discarded_area:
                 cv2.drawContours(ignored_contours, [c], -1, 0, -1)
                 continue
             # if not self.has_four_corners(c):
@@ -218,7 +218,7 @@ class ImgProcessing:
             pass
 
         # create a window for all the track bars and initialize the trackbars
-        cv2.namedWindow(window_name)
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
         cv2.createTrackbar('l_h', window_name, 0, 179, trackbar_pass)
         cv2.createTrackbar('l_s', window_name, 0, 255, trackbar_pass)
         cv2.createTrackbar('l_v', window_name, 0, 255, trackbar_pass)
@@ -251,7 +251,7 @@ class ImgProcessing:
                 # To place both pictures side by side, cv2 will not accept the binary mask,
                 # so instead we convert it to gray, and then it works
                 mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-                combined = np.concatenate((mask, result), axis=1)
+                combined = np.concatenate((mask, result, frame), axis=1)
                 # Show both images, side by side
                 cv2.imshow(window_name, combined)
 
