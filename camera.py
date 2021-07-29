@@ -21,7 +21,15 @@ class ImgProcessing:
                 camera_index (int): The camera index of the webcam to be used
         """
         self.cam = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+        self.discard_frames(30)
         self.ref_image = self.get_ref_image()
+
+    def discard_frames(self, num_discarded):
+        """
+            Function to adjust the camera to the light in the room.
+        """
+        for x in range(num_discarded):
+            ret, img = self.cam.read()
 
     def get_ref_image(self):
         """
@@ -30,15 +38,8 @@ class ImgProcessing:
             Returns:
                 frame: A image captured from the webcam
         """
-        x = 0
-        while True:
-            sleep(2)
-            ret, frame = self.cam.read()
-            if x == 2:
-                return frame
-            else:
-                x += 1
-
+        ret, frame = self.cam.read()
+        return frame
 
     def find_color(self, color, lower_mask=None, upper_mask=None):
         """
@@ -63,6 +64,7 @@ class ImgProcessing:
                 'red': [140, 50, 200],
                 'green': [30, 50, 22],
                 'blue': [80, 25, 200],
+                'white': [0, 0, 0]
             }
             lower_mask = np.array(lower[color])
         else:
@@ -73,6 +75,7 @@ class ImgProcessing:
                 'red': [185, 255, 255],
                 'green': [90, 255, 255],
                 'blue': [150, 255, 255],
+                'white': [0, 0, 255]
             }
             upper_mask = np.array(upper[color])
         else:
