@@ -5,18 +5,7 @@ from camera import ImgProcessing
 from calculations import Calculations
 import numpy as np
 import threading
-
-
-def live_stream(cam, update_delay):
-    out = cv2.VideoWriter('output_video.avi', cv2.VideoWriter_fourcc(*'XVID'), 24, (640, 640))
-
-    while True:
-        ret, img = processing.cam.read()
-        cv2.imshow('live_stream', img)
-        out.write(img)
-        if cv2.waitKey(update_delay) & 0xFF == ord('q'):
-            break
-
+from live_stream import live_stream
 
 # define masks for red color filtering
 # lower_red_mask = [172, 99, 10]
@@ -29,15 +18,15 @@ def live_stream(cam, update_delay):
 # upper_blue_mask = [112, 255, 255]
 
 # initialize Camera and calculator
-processing = ImgProcessing(0)
+processing = ImgProcessing(1)
 processing.set_ref_gamma(3)
 calculator = Calculations()
 
 # initalize tello
-# tello = Tello()
-# tello.connect()
-# tello.set_speed(20)
-# sleep(2)
+tello = Tello()
+tello.connect()
+tello.set_speed(15)
+sleep(2)
 
 # Set the fraction to multiply by for converting from pixel distance to real world distance
 pixel_to_real_fract = 100 / 192
@@ -59,7 +48,7 @@ drone_back_color = 'blue'
 
 # Start a thread for recording and monitoring video
 
-recording_thread = threading.Thread(target=live_stream, args=[processing, 1])
+recording_thread = threading.Thread(target=live_stream, args=[1, tello])
 recording_thread.start()
 
 # Find destination points -- white_points
@@ -101,7 +90,7 @@ Instructions to find the drone
         7. Fly the drone
 """
 
-# tello.takeoff()
+tello.takeoff()
 
 counter = 1
 mid_points_list = np.array([])
@@ -187,16 +176,16 @@ for destination in des_centers:
     cv2.destroyWindow('rectangles')
 
     # Tell the drone what to do
-    # tello.rotate_counter_clockwise(int(drone_rotation))
-    # sleep(2)
-    # tello.move_forward(int(mid_to_des))
+    tello.rotate_counter_clockwise(int(drone_rotation))
+    sleep(2)
+    tello.move_forward(int(mid_to_des))
 
     # get a new image
     processing.ref_image = processing.get_ref_image()
     processing.set_ref_gamma(3)
 
-# tello.land()
+tello.land()
 
-recording_thread.join()
 cv2.destroyAllWindows()
+recording_thread.join()
 processing.cam.release()
