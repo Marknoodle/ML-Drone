@@ -1,10 +1,14 @@
+# Dr. Xiang, Patrick Woolard, and Wesley Cooke with Augusta University School of Computer and Cyber Sciences
+# Tello Drone - Vision based Navigation Research
+# main2.py
+
+import threading
 import cv2
+import numpy as np
 from time import sleep
 from djitellopy import Tello
 from camera import ImgProcessing
 from calculations import Calculations
-import numpy as np
-import threading
 from live_stream import live_stream
 
 # define masks for red color filtering
@@ -22,7 +26,7 @@ processing = ImgProcessing(1)
 processing.set_ref_gamma(3)
 calculator = Calculations()
 
-# initalize tello
+# initialize tello
 tello = Tello()
 tello.connect()
 tello.set_speed(15)
@@ -90,12 +94,14 @@ Instructions to find the drone
         7. Fly the drone
 """
 
+# The drone can fly now
 tello.takeoff()
 
 counter = 1
 mid_points_list = np.array([])
+# For every destination do these things...
 for destination in des_centers:
-    # Find the drone
+    # Find the drone...
     while True:
         print('Here is the image used to find the drone')
         cv2.imshow('ref_img', processing.ref_image)
@@ -134,7 +140,7 @@ for destination in des_centers:
     drone_mid_point = calculator.find_mid_point(back_centers[0], front_centers[0])
     mid_points_list = np.append(mid_points_list, drone_mid_point)
 
-    # add the first point to the destinations so that we go back to it at the end
+    # add the first mid point to the destinations so that the drone will go back to it at the end
     if counter == 1:
         des_centers.append(drone_mid_point)
     counter += 1
@@ -151,6 +157,7 @@ for destination in des_centers:
     # find the rotation the drone needs to take to face the destination
     drone_rotation = destination_rotation - front_rotation
 
+    # Ensure an optimal angle
     if drone_rotation < -180:
         drone_rotation += 360
     elif drone_rotation > 180:
@@ -184,6 +191,8 @@ for destination in des_centers:
     processing.ref_image = processing.get_ref_image()
     processing.set_ref_gamma(3)
 
+# After all the destinations, tell the drone to land, destroy all remaining windows,
+# wait for the recording thread to join and release the camera
 tello.land()
 
 cv2.destroyAllWindows()

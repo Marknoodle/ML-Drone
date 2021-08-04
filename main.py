@@ -1,10 +1,14 @@
+# Dr. Xiang, Patrick Woolard, and Wesley Cooke with Augusta University School of Computer and Cyber Sciences
+# Tello Drone - Vision based Navigation Research
+# main.py
+
+from time import sleep
+from djitellopy import Tello
 import cv2
 from camera import ImgProcessing
 from calculations import Calculations
-from djitellopy import Tello
-from time import sleep
 
-# Instantiate the classes and ensure a good ref_image
+# Instantiate the classes
 processing = ImgProcessing(1)
 calculator = Calculations()
 

@@ -1,3 +1,7 @@
+# Dr. Xiang, Patrick Woolard, and Wesley Cooke with Augusta University School of Computer and Cyber Sciences
+# Tello Drone - Vision based Navigation Research
+# test.py
+
 import cv2
 import numpy as np
 from camera import ImgProcessing, RealsenseProcessing
@@ -19,8 +23,6 @@ t1 = threading.Thread(target=thread_process, args=[tello])
 t1.start()
 while True:
     print(f'{tello.get_height()} - main')
-
-
 
 # def live_stream(cam, update_delay):
 #     out = cv2.VideoWriter('output_video.avi', cv2.VideoWriter_fourcc(*'XVID'), 24, (1920,1080))

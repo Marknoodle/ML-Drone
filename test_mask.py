@@ -1,7 +1,13 @@
+# Dr. Xiang, Patrick Woolard, and Wesley Cooke with Augusta University School of Computer and Cyber Sciences
+# Tello Drone - Vision based Navigation Research
+# test_mask.py
+
 import cv2
 from camera import ImgProcessing
 
-# Initalize the camera with the proper camera index
+# File to test for masks values
+
+# Initialize the camera with the proper camera index
 processing = ImgProcessing(1)
 gamma = 3
 # Use the Trackbar function to test the mask values for lower color and upper colors
