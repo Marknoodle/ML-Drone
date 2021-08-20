@@ -17,16 +17,16 @@ from live_stream import live_stream
 # lower_blue_mask = [70, 25, 166]  # [ 70  25 166], ur:[112 255 255]
 # upper_blue_mask = [112, 255, 255]
 
-# initialize Camera and calculator
+# # initialize Camera and calculator
 processing = ImgProcessing(1)
 processing.set_ref_gamma(3)
 calculator = Calculations()
-
+#
 # initalize tello
-tello = Tello()
-tello.connect()
-tello.set_speed(15)
-sleep(2)
+# tello = Tello()
+# tello.connect()
+# tello.set_speed(25)
+# sleep(2)
 
 # Set the fraction to multiply by for converting from pixel distance to real world distance
 pixel_to_real_fract = 100 / 192
@@ -48,8 +48,8 @@ drone_back_color = 'blue'
 
 # Start a thread for recording and monitoring video
 
-recording_thread = threading.Thread(target=live_stream, args=[1, tello])
-recording_thread.start()
+# recording_thread = threading.Thread(target=live_stream, args=[200, tello])
+# recording_thread.start()
 
 # Find destination points -- white_points
 while True:

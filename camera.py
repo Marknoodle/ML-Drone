@@ -308,7 +308,7 @@ class RealsenseProcessing(ImgProcessing):
         self.pipeline = rs.pipeline()
 
         self.config = rs.config()
-        self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+        self.config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 15)
 
         self.pipeline.start(self.config)
 

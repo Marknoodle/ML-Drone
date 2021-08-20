@@ -2,8 +2,11 @@ from camera import ImgProcessing
 from calculations import Calculations
 import cv2
 import matplotlib.pyplot as plt
-import sys
+import matplotlib.image as image
+from djitellopy import Tello
+from random import randint
 from mpl_toolkits.mplot3d import Axes3D
+
 
 def live_stream(update_delay, tello_o):
 
@@ -21,14 +24,24 @@ def live_stream(update_delay, tello_o):
     upper_back_mask = [112, 255, 255]
     drone_back_color = 'blue'
 
-    plt.title('A Basic Line Plot')  # Title of the plot
-    plt.xlabel('X-axis')  # X-Label
-    plt.ylabel('Y-axis')  # Y-Label
+    fig = plt.figure(figsize = (8, 6), dpi=90)
+    # Making 3D Plot using plot3D()
+    ax = plt.axes(projection = '3d')
+
+    # Setting Axis labels
+    ax.set_xlabel('X-Axis')
+    ax.set_ylabel('Y-Axis')
+    ax.set_zlabel('Z-Axis')
+    # ax.set_xlim(0,1920)
+    # ax.set_ylim()
+    img = image.imread('drone_pic.png')
+
     plt.ion()
     plt.show()
 
     x_drone = []
     y_drone = []
+    z_drone = []
     drone_mid_points = []
     while True:
         live_processing.ref_image = live_processing.get_ref_image()
@@ -48,7 +61,7 @@ def live_stream(update_delay, tello_o):
             elif cv2.waitKey(1) & 0xFF == ord('q'):
                 cv2.destroyWindow('test')
                 plt.pause(30)
-                sys.exit()
+                break
             else:
                 live_processing.ref_image = live_processing.get_ref_image()
                 live_processing.set_ref_gamma(3)
@@ -58,12 +71,12 @@ def live_stream(update_delay, tello_o):
         drone_mid_points.append(drone_mid_point)
         x_drone.append(drone_mid_point[0])
         y_drone.append(drone_mid_point[1] * -1)
+        z_drone.append(1) #
 
+        cv2.imshow('live_trajectory', live_processing.ref_image)
 
-        cv2.imshow('test', live_processing.ref_image)
-
-
-        plt.plot(x_drone, y_drone)
+        fig.figimage(img, x_drone[-1], y_drone[-1])
+        ax.plot3D(x_drone, y_drone, z_drone)
         plt.show()
         plt.pause(0.01)
 
@@ -77,16 +90,5 @@ def live_stream(update_delay, tello_o):
 
 
 if __name__ == '__main__':
-    drone_mid_points, x_drone, y_drone = live_stream(1)
-
-
-# # plot() is used for plotting a line plot
-# plt.plot(x_drone, y_drone)
-# # Adding title, xlabel and ylabel
-# plt.title('A Basic Line Plot') # Title of the plot
-# plt.xlabel('X-axis') # X-Label
-# plt.ylabel('Y-axis') # Y-Label
-# # show() is used for displaying the plot
-# plt.show()
-
-# print(drone_mid_points)
+    #tello = Tello()
+    drone_mid_points, x_drone, y_drone = live_stream(1, 'tello')
