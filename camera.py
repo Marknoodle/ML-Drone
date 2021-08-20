@@ -1,7 +1,11 @@
+# Dr. Xiang, Patrick Woolard, and Wesley Cooke with Augusta University School of Computer and Cyber Sciences
+# Tello Drone - Vision based Navigation Research
+# camera.py
+
 import cv2
-import numpy as np # https://numpy.org/doc/stable/user/absolute_beginners.html#working-with-mathematical-formulas
-from time import sleep
-import pyrealsense2 as rs # https://intelrealsense.github.io/librealsense/python_docs/_generated/pyrealsense2.html
+import numpy as np  # https://numpy.org/doc/stable/user/absolute_beginners.html#working-with-mathematical-formulas
+import pyrealsense2 as rs  # https://intelrealsense.github.io/librealsense/python_docs/_generated/pyrealsense2.html
+
 
 class ImgProcessing:
     """
@@ -290,6 +294,7 @@ class ImgProcessing:
         gamma_table = [np.power(x / 255.0, gamma) * 255.0 for x in range(256)]
         gamma_table = np.round(np.array(gamma_table)).astype(np.uint8)
         return cv2.LUT(img, gamma_table)
+
 
 class RealsenseProcessing(ImgProcessing):
     """

@@ -1,9 +1,14 @@
+# Dr. Xiang, Patrick Woolard, and Wesley Cooke with Augusta University School of Computer and Cyber Sciences
+# Tello Drone - Vision based Navigation Research
+# calculations.py
+
 import math
+
+
 class Calculations:
     """
-        A class to handle calculating values
+        A class to handle math formulas
     """
-
 
     def distance_formula(self, point1, point2):
         """
@@ -19,7 +24,6 @@ class Calculations:
 
         distance = math.sqrt(((point2[0] - point1[0]) ** 2) + ((point2[1] - point1[1]) ** 2))
         return distance
-
 
     def find_mid_point(self, point1, point2):
         """
@@ -39,7 +43,6 @@ class Calculations:
         mid_point = [x, y]
         return mid_point
 
-
     def move_origin(self, point, axis_point):
         """
             Parameters:
@@ -55,7 +58,6 @@ class Calculations:
 
         point_rta = [(point[0] - axis_point[0]), (point[1] - axis_point[1])]
         return point_rta
-
 
     def calculate_angle(self, point):
         """
